@@ -1,6 +1,9 @@
-const express = require("express");
-const morgan = require("morgan")
-const postBank = require("./postBank")
+const express = require('express');
+const morgan = require('morgan');
+const postBank = require('./postBank');
+const postList = require('./views/postList');
+const postDetails = require('./views/postDetails');
+const pageNotFound = require('./views/pageNotFound');
 
 const app = express();
 
@@ -8,39 +11,14 @@ const app = express();
 app.use(morgan('dev'));
 
 //static routing - here is allows access to the contents the public folder
-app.use(express.static('public'))
+app.use(express.static('public'));
 
 app.get('/', (req, res) => {
-  //first, get a list of posts
-  const posts = postBank.list()
-
-  //main route - prepare some html to send as output
-  const html = `<!DOCTYPE html>
-  <html>
-  <head>
-    <title>Wizard News</title>
-    <link rel="stylesheet" href="/style.css" />
-  </head>
-  <body>
-    <div class="news-list">
-      <header><img src="/logo.png"/>Wizard News</header>
-      ${posts.map(post => `
-        <div class='news-item'>
-          <p>
-            <span class="news-position">${post.id}. ▲</span><a href='/posts/${post.id}'>${post.title}</a>
-            <small>(by ${post.name})</small>
-          </p>
-          <small class="news-info">
-            ${post.upvotes} upvotes | ${post.date}
-          </small>
-        </div>`
-     ).join('')}
-    </div>
-  </body>
-  </html>`
+  //get a list of posts
+  const posts = postBank.list();
 
   //send the page
-  res.send(html);
+  res.send(postList(posts));
 });
 
 app.get('/posts/:id', (req, res) => {
@@ -51,61 +29,17 @@ app.get('/posts/:id', (req, res) => {
   if (!post.id)
     next();
 
-  const html = `<!DOCTYPE html>
-    <html>
-    <head>
-      <title>Wizard News</title>
-      <link rel="stylesheet" href="/style.css" />
-    </head>
-    <body>
-      <div class="news-list">
-      <header><img src="/logo.png"/>Wizard News</header>
-      <div class='news-item'>
-        <p>
-          ${post.title} <small>(by ${post.name})</small>
-        </p>
-      </div>
-      <div class='news-item'>
-        <p>
-          ${post.content}
-        </p>
-      </div>
-    </body>
-    </html>`
-
-  res.send(html);
+  //send the page
+  res.send(postDetails(post));
 });
 
 //error handler
 app.use((err, req, res, next) => {
-  //define the error page to return
-  const html = `<!DOCTYPE html>
-  <html>
-  <head>
-    <title>Wizard News</title>
-    <link rel="stylesheet" href="/style.css" />
-  </head>
-  <body>
-    <div class="news-list">
-    <header><img src="/logo.png"/>Wizard News</header>
-    <div class='news-item'>
-      <p>
-        *POOF*
-      </p>
-    </div>
-    <div class='news-item'>
-      <p>
-        Looks like this page has disappeared! Sorry about that.
-      </p>
-    </div>
-  </body>
-  </html>`
-
   //send page not found status
-  res.status(404)
+  res.status(404);
   
   //send page itself
-  res.send(html);
+  res.send(pageNotFound());
 });
 
 const PORT = 1337;
